@@ -16,6 +16,7 @@ let
     ./stage-2.nix
     ./runit.nix
     (nixpkgs + "/nixos/modules/system/etc/etc.nix")
+    (nixpkgs + "/nixos/modules/system/etc/etc-activation.nix")
     (nixpkgs + "/nixos/modules/system/activation/activation-script.nix")
     (nixpkgs + "/nixos/modules/misc/nixpkgs.nix")
     (nixpkgs + "/nixos/modules/system/boot/kernel.nix")

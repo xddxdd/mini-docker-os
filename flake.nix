@@ -3,7 +3,7 @@
 
   inputs = {
     # Common libraries
-    nixpkgs.url = "github:NixOS/nixpkgs/badf5a0dc489c50bba30c957b7c708cb74d30da8";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable-small";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
