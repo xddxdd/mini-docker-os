@@ -35,8 +35,10 @@ with lib;
 
   environment.etc."docker/daemon.json".text = builtins.toJSON {
     experimental = true;
+    hosts = [ "unix:///var/run/docker.sock" "tcp://0.0.0.0:2375" ];
     iptables = false;
     storage-driver = "overlay2";
+    tls = false;
     userland-proxy = false;
   };
 
