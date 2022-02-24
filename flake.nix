@@ -13,17 +13,13 @@
       eachSystem = flake-utils.lib.eachSystemMap flake-utils.lib.allSystems;
     in
     {
-      defaultPackage = eachSystem (system: import ./. {
-        nixpkgs = inputs.not-os-nixpkgs;
-        inherit system;
+      defaultPackage = eachSystem (system: (import ./. {
+        inherit nixpkgs system;
 
         configuration = { config, pkgs, ... }: {
           not-os.nix = false;
           not-os.simpleStaticIp = true;
-          networking.timeServers = lib.mkForce [ ];
           environment.etc = {
-            "service/nix/run".enable = false;
-            "service/rngd/run".enable = false;
             "ssh/authorized_keys.d/root" = {
               text = ''
                 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMcWoEQ4Mh27AV3ixcn9CMaUK/R+y4y5TqHmn2wJoN6i lantian@lantian-lenovo-archlinux
@@ -35,6 +31,6 @@
           boot.initrd.kernelModules = [ "virtio" "virtio_pci" "virtio_net" "virtio_rng" "virtio_blk" "virtio_console" ];
           boot.kernelPackages = pkgs.linuxPackages_latest;
         };
-      }).runner;
+      }).runner);
     };
 }

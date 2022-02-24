@@ -32,18 +32,6 @@ with lib;
       default = false;
       description = "set a static ip of 10.0.2.15";
     };
-    networking.timeServers = mkOption {
-      default = [
-        "0.nixos.pool.ntp.org"
-        "1.nixos.pool.ntp.org"
-        "2.nixos.pool.ntp.org"
-        "3.nixos.pool.ntp.org"
-      ];
-      type = types.listOf types.str;
-      description = ''
-        The set of NTP servers from which to synchronise.
-      '';
-    };
   };
   config = {
     environment.systemPackages = lib.optional config.not-os.nix pkgs.nix;
@@ -83,7 +71,6 @@ with lib;
       passwd.text = ''
         root:x:0:0:System administrator:/root:/run/current-system/sw/bin/bash
         sshd:x:498:65534:SSH privilege separation user:/var/empty:/run/current-system/sw/bin/nologin
-        toxvpn:x:1010:65534::/var/lib/toxvpn:/run/current-system/sw/bin/nologin
         nixbld1:x:30001:30000:Nix build user 1:/var/empty:/run/current-system/sw/bin/nologin
         nixbld2:x:30002:30000:Nix build user 2:/var/empty:/run/current-system/sw/bin/nologin
         nixbld3:x:30003:30000:Nix build user 3:/var/empty:/run/current-system/sw/bin/nologin
@@ -104,10 +91,6 @@ with lib;
         root:x:0:
         nixbld:x:30000:nixbld1,nixbld10,nixbld2,nixbld3,nixbld4,nixbld5,nixbld6,nixbld7,nixbld8,nixbld9
       '';
-      "ssh/ssh_host_rsa_key.pub".source = ./ssh/ssh_host_rsa_key.pub;
-      "ssh/ssh_host_rsa_key" = { mode = "0600"; source = ./ssh/ssh_host_rsa_key; };
-      "ssh/ssh_host_ed25519_key.pub".source = ./ssh/ssh_host_ed25519_key.pub;
-      "ssh/ssh_host_ed25519_key" = { mode = "0600"; source = ./ssh/ssh_host_ed25519_key; };
     };
     boot.kernelParams = [ "systemConfig=${config.system.build.toplevel}" ];
     boot.kernelPackages = lib.mkDefault (if pkgs.system == "armv7l-linux" then pkgs.linuxPackages_rpi1 else pkgs.linuxPackages);
