@@ -30,23 +30,6 @@ with lib;
   };
   config = {
     environment.systemPackages = lib.optional config.not-os.nix pkgs.nix;
-    nixpkgs.config = {
-      packageOverrides = self:
-        let
-          empty = self.stdenvNoCC.mkDerivation {
-            pname = "empty";
-            version = "1.0.0";
-            src = ./.;
-            installPhase = "touch $out";
-          };
-        in
-        {
-          systemdMinimal = empty;
-
-          dhcpcd = self.dhcpcd.override { udev = null; };
-          util-linux = self.util-linux.override { systemd = null; };
-        };
-    };
     environment.etc = {
       "nix/nix.conf".enable = config.not-os.nix;
       "nix/nix.conf".source = pkgs.runCommand "nix.conf" { } ''

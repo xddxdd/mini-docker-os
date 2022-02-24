@@ -7,23 +7,42 @@ let
     key = _file;
     config = {
       nixpkgs.localSystem = { inherit system; };
+      nixpkgs.overlays = [
+        (final: prev:
+          let
+            empty = prev.stdenv.mkDerivation {
+              pname = "empty";
+              version = "1.0.0";
+              phases = [ "installPhase" ];
+              installPhase = "touch $out";
+            };
+          in
+          {
+            systemdMinimal = empty;
+
+            dhcpcd = prev.dhcpcd.override { udev = null; };
+            util-linux = prev.util-linux.override { systemd = null; };
+          })
+      ];
     };
   };
   baseModules = [
+    ./activation-script.nix
     ./base.nix
-    ./system-path.nix
+    ./runit.nix
     ./stage-1.nix
     ./stage-2.nix
-    ./runit.nix
-    (nixpkgs + "/nixos/modules/system/etc/etc.nix")
-    (nixpkgs + "/nixos/modules/system/etc/etc-activation.nix")
-    (nixpkgs + "/nixos/modules/system/activation/activation-script.nix")
-    (nixpkgs + "/nixos/modules/misc/nixpkgs.nix")
-    (nixpkgs + "/nixos/modules/system/boot/kernel.nix")
+    ./system-path.nix
+    ./systemd-compat.nix
+
+    (nixpkgs + "/nixos/modules/config/sysctl.nix")
     (nixpkgs + "/nixos/modules/misc/assertions.nix")
     (nixpkgs + "/nixos/modules/misc/lib.nix")
-    (nixpkgs + "/nixos/modules/config/sysctl.nix")
-    ./systemd-compat.nix
+    (nixpkgs + "/nixos/modules/misc/nixpkgs.nix")
+    (nixpkgs + "/nixos/modules/system/boot/kernel.nix")
+    (nixpkgs + "/nixos/modules/system/etc/etc-activation.nix")
+    (nixpkgs + "/nixos/modules/system/etc/etc.nix")
+
     pkgsModule
   ];
   evalConfig = modules: pkgs.lib.evalModules {
