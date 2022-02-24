@@ -1,15 +1,6 @@
 { pkgs, lib, config, ... }:
 
 let
-  sshd_config = pkgs.writeText "sshd_config" ''
-    HostKey /etc/ssh/ssh_host_ed25519_key
-    Port 22
-    PidFile /run/sshd.pid
-    Protocol 2
-    PermitRootLogin yes
-    PasswordAuthentication no
-    AuthorizedKeysFile /etc/ssh/authorized_keys.d/%u
-  '';
   compat = pkgs.runCommand "runit-compat" {} ''
     mkdir -p $out/bin/
     cat << EOF > $out/bin/poweroff
@@ -51,14 +42,14 @@ in
 
     "runit/3".source = pkgs.writeScript "3" ''
       #!/bin/sh
-      echo and down we go
     '';
 
-    "service/sshd/run".source = pkgs.writeScript "sshd_run" ''
+    "service/dropbear/run".source = pkgs.writeScript "sshd_run" ''
       #!/bin/sh
-      rm -f /etc/ssh/ssh_host_ed25519_key /etc/ssh/ssh_host_ed25519_key.pub
-      ${pkgs.openssh}/bin/ssh-keygen -f /etc/ssh/ssh_host_ed25519_key -N "" -t ed25519
-      ${pkgs.openssh}/bin/sshd -D -f ${sshd_config}
+      mkdir -p /root/.ssh
+      ln -sf /etc/dropbear/authorized_keys /root/.ssh/authorized_keys
+      mkdir -p /etc/dropbear
+      ${pkgs.dropbear}/bin/dropbear -RFmjk
     '';
 
     "service/nix/run".enable = config.not-os.nix;

@@ -15,7 +15,7 @@ with lib;
     };
     hardware.firmware = mkOption {
       type = types.listOf types.package;
-      default = [];
+      default = [ ];
       apply = list: pkgs.buildEnv {
         name = "firmware";
         paths = list;
@@ -36,26 +36,25 @@ with lib;
   config = {
     environment.systemPackages = lib.optional config.not-os.nix pkgs.nix;
     nixpkgs.config = {
-      packageOverrides = self: {
-        utillinux = self.utillinux.override { systemd = null; };
-        dhcpcd = self.dhcpcd.override { udev = null; };
-        linux_rpixxx = self.linux_rpi.override {
-          extraConfig = ''
-            DEBUG_LL y
-            EARLY_PRINTK y
-            DEBUG_BCM2708_UART0 y
-            ARM_APPENDED_DTB n
-            ARM_ATAG_DTB_COMPAT n
-            ARCH_BCM2709 y
-            BCM2708_GPIO y
-            BCM2708_NOL2CACHE y
-            BCM2708_SPIDEV y
-          '';
+      packageOverrides = self:
+        let
+          empty = self.stdenvNoCC.mkDerivation {
+            pname = "empty";
+            version = "1.0.0";
+            src = ./.;
+            installPhase = "touch $out";
+          };
+        in
+        {
+          systemdMinimal = empty;
+
+          dhcpcd = self.dhcpcd.override { udev = null; };
+          util-linux = self.util-linux.override { systemd = null; };
         };
-      };
     };
     environment.etc = {
-      "nix/nix.conf".source = pkgs.runCommand "nix.conf" {} ''
+      "nix/nix.conf".enable = config.not-os.nix;
+      "nix/nix.conf".source = pkgs.runCommand "nix.conf" { } ''
         extraPaths=$(for i in $(cat ${pkgs.writeReferencesToFile pkgs.stdenv.shell}); do if test -d $i; then echo $i; fi; done)
         cat > $out << EOF
         build-use-sandbox = true
@@ -65,12 +64,18 @@ with lib;
         build-cores = 4
         EOF
       '';
-      bashrc.text = "export PATH=/run/current-system/sw/bin";
-      profile.text = "export PATH=/run/current-system/sw/bin";
+
       "resolv.conf".text = "nameserver 10.0.2.3";
+
+      # Put shell paths here, or dropbear will ignore them
+      shells.text = ''
+        /run/current-system/sw/bin/bash
+        /run/current-system/sw/bin/sh
+      '';
+
       passwd.text = ''
-        root:x:0:0:System administrator:/root:/run/current-system/sw/bin/bash
-        sshd:x:498:65534:SSH privilege separation user:/var/empty:/run/current-system/sw/bin/nologin
+        root:x:0:0::/root:/run/current-system/sw/bin/sh
+      '' + lib.optionalString config.not-os.nix ''
         nixbld1:x:30001:30000:Nix build user 1:/var/empty:/run/current-system/sw/bin/nologin
         nixbld2:x:30002:30000:Nix build user 2:/var/empty:/run/current-system/sw/bin/nologin
         nixbld3:x:30003:30000:Nix build user 3:/var/empty:/run/current-system/sw/bin/nologin
@@ -82,23 +87,24 @@ with lib;
         nixbld9:x:30009:30000:Nix build user 9:/var/empty:/run/current-system/sw/bin/nologin
         nixbld10:x:30010:30000:Nix build user 10:/var/empty:/run/current-system/sw/bin/nologin
       '';
+
       "nsswitch.conf".text = ''
-        hosts:     files  dns   myhostname mymachines
+        hosts:     files dns myhostname mymachines
         networks:  files dns
       '';
-      "services".source = pkgs.iana_etc + "/etc/services";
+
       group.text = ''
-        root:x:0:
+        root:x:0:root
+      '' + lib.optionalString config.not-os.nix ''
         nixbld:x:30000:nixbld1,nixbld10,nixbld2,nixbld3,nixbld4,nixbld5,nixbld6,nixbld7,nixbld8,nixbld9
       '';
     };
     boot.kernelParams = [ "systemConfig=${config.system.build.toplevel}" ];
-    boot.kernelPackages = lib.mkDefault (if pkgs.system == "armv7l-linux" then pkgs.linuxPackages_rpi1 else pkgs.linuxPackages);
-    system.build.earlyMountScript = pkgs.writeScript "dummy" ''
-    '';
+    boot.kernelPackages = lib.mkDefault pkgs.linuxPackages;
+    system.build.earlyMountScript = pkgs.writeScript "dummy" "";
     system.build.runvm = pkgs.writeScript "runner" ''
-      #!${pkgs.stdenv.shell}
-      exec ${pkgs.qemu_kvm}/bin/qemu-kvm -name not-os -m 512 \
+      #!/bin/sh
+      qemu-system-x86_64 --enable-kvm -cpu host -name not-os -m 512 \
         -drive index=0,id=drive1,file=${config.system.build.squashfs},readonly,media=cdrom,format=raw,if=virtio \
         -kernel ${config.system.build.kernel}/bzImage -initrd ${config.system.build.initialRamdisk}/initrd -nographic \
         -append "console=ttyS0 ${toString config.boot.kernelParams} quiet panic=-1" -no-reboot \
@@ -107,7 +113,7 @@ with lib;
         -device virtio-rng-pci
     '';
 
-    system.build.dist = pkgs.runCommand "not-os-dist" {} ''
+    system.build.dist = pkgs.runCommand "not-os-dist" { } ''
       mkdir $out
       cp ${config.system.build.squashfs} $out/root.squashfs
       cp ${config.system.build.kernel}/*Image $out/kernel
@@ -123,9 +129,10 @@ with lib;
     '';
 
     # nix-build -A system.build.toplevel && du -h $(nix-store -qR result) --max=0 -BM|sort -n
-    system.build.toplevel = pkgs.runCommand "not-os" {
-      activationScript = config.system.activationScripts.script;
-    } ''
+    system.build.toplevel = pkgs.runCommand "not-os"
+      {
+        activationScript = config.system.activationScripts.script;
+      } ''
       mkdir $out
       cp ${config.system.build.bootStage2} $out/init
       substituteInPlace $out/init --subst-var-by systemConfig $out

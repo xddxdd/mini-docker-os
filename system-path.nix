@@ -5,7 +5,7 @@
 with lib;
 
 let
-  requiredPackages = with pkgs; [ utillinux coreutils iproute iputils procps curl bashInteractive runit ];
+  requiredPackages = with pkgs; [ busybox runit ];
 in
 {
   options = {
