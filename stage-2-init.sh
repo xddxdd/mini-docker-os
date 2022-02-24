@@ -16,6 +16,7 @@ mkdir /dev/pts /dev/shm
 mount -t devpts devpts /dev/pts
 mount -t tmpfs tmpfs /run
 mount -t tmpfs tmpfs /dev/shm
+mount -t cgroup2 cgroup2 /sys/fs/cgroup
 
 $systemConfig/activate
 

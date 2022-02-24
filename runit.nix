@@ -1,16 +1,19 @@
 { pkgs, lib, config, ... }:
 
 let
-  compat = pkgs.runCommand "runit-compat" {} ''
+  compat = pkgs.runCommand "runit-compat" { } ''
     mkdir -p $out/bin/
+
     cat << EOF > $out/bin/poweroff
-#!/bin/sh
-exec runit-init 0
-EOF
+    #!/bin/sh
+    exec runit-init 0
+    EOF
+
     cat << EOF > $out/bin/reboot
-#!/bin/sh
-exec runit-init 6
-EOF
+    #!/bin/sh
+    exec runit-init 6
+    EOF
+
     chmod +x $out/bin/{poweroff,reboot}
   '';
 in
@@ -23,7 +26,7 @@ in
       ip addr add 10.0.2.15 dev eth0
       ip link set eth0 up
       ip route add 10.0.2.0/24 dev eth0
-      ip  route add default via 10.0.2.2 dev eth0
+      ip route add default via 10.0.2.2 dev eth0
       ''}
       mkdir /bin/
       ln -s ${pkgs.stdenv.shell} /bin/sh

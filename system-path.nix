@@ -5,20 +5,24 @@
 with lib;
 
 let
-  requiredPackages = with pkgs; [ busybox runit ];
+  requiredPackages = with pkgs; [
+    busybox
+    nftables
+    runit
+  ];
 in
 {
   options = {
     environment = {
       systemPackages = mkOption {
         type = types.listOf types.package;
-        default = [];
+        default = [ ];
         example = literalExample "[ pkgs.firefox pkgs.thunderbird ]";
       };
       pathsToLink = mkOption {
         type = types.listOf types.str;
-        default = [];
-        example = ["/"];
+        default = [ ];
+        example = [ "/" ];
         description = "List of directories to be symlinked in <filename>/run/current-system/sw</filename>.";
       };
       extraOutputsToInstall = mkOption {
@@ -34,6 +38,7 @@ in
   };
   config = {
     environment.systemPackages = requiredPackages;
+    environment.etc.ssl.source = "${pkgs.cacert}/etc/ssl";
     environment.pathsToLink = [ "/bin" ];
     system.path = pkgs.buildEnv {
       name = "system-path";

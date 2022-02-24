@@ -17,19 +17,23 @@ let
     '';
   });
 
-  systemActivationScript = set: onlyDry: let
-    set' = mapAttrs (_: v: if isString v then (noDepEntry v) // { supportsDryActivation = false; } else v) set;
-    withHeadlines = addAttributeName set';
-    # When building a dry activation script, this replaces all activation scripts
-    # that do not support dry mode with a comment that does nothing. Filtering these
-    # activation scripts out so they don't get generated into the dry activation script
-    # does not work because when an activation script that supports dry mode depends on
-    # an activation script that does not, the dependency cannot be resolved and the eval
-    # fails.
-    withDrySnippets = mapAttrs (a: v: if onlyDry && !v.supportsDryActivation then v // {
-      text = "#### Activation script snippet ${a} does not support dry activation.";
-    } else v) withHeadlines;
-  in
+  systemActivationScript = set: onlyDry:
+    let
+      set' = mapAttrs (_: v: if isString v then (noDepEntry v) // { supportsDryActivation = false; } else v) set;
+      withHeadlines = addAttributeName set';
+      # When building a dry activation script, this replaces all activation scripts
+      # that do not support dry mode with a comment that does nothing. Filtering these
+      # activation scripts out so they don't get generated into the dry activation script
+      # does not work because when an activation script that supports dry mode depends on
+      # an activation script that does not, the dependency cannot be resolved and the eval
+      # fails.
+      withDrySnippets = mapAttrs
+        (a: v:
+          if onlyDry && !v.supportsDryActivation then v // {
+            text = "#### Activation script snippet ${a} does not support dry activation.";
+          } else v)
+        withHeadlines;
+    in
     ''
       #!${pkgs.runtimeShell}
 
@@ -66,18 +70,22 @@ let
 
   scriptType = withDry: with types;
     let scriptOptions =
-      { deps = mkOption
-          { type = types.listOf types.str;
+      {
+        deps = mkOption
+          {
+            type = types.listOf types.str;
             default = [ ];
             description = "List of dependencies. The script will run after these.";
           };
         text = mkOption
-          { type = types.lines;
+          {
+            type = types.lines;
             description = "The content of the script.";
           };
       } // optionalAttrs withDry {
         supportsDryActivation = mkOption
-          { type = types.bool;
+          {
+            type = types.bool;
             default = false;
             description = ''
               Whether this activation script supports being dry-activated.
@@ -100,7 +108,7 @@ in
   options = {
 
     system.activationScripts = mkOption {
-      default = {};
+      default = { };
 
       example = literalExpression ''
         { stdio.text =
@@ -138,7 +146,7 @@ in
     };
 
     system.userActivationScripts = mkOption {
-      default = {};
+      default = { };
 
       example = literalExpression ''
         { plasmaSetup = {
@@ -204,20 +212,20 @@ in
 
     system.activationScripts.stdio = ""; # obsolete
 
-    system.activationScripts.var =
-      ''
-        # Various log/runtime directories.
-        mkdir -m 1777 -p /var/tmp
+    system.activationScripts.var = ''
+      # Various log/runtime directories.
+      mkdir -m 1777 -p /var/tmp
 
-        # Empty, immutable home directory of many system accounts.
-        if [ ! -d /var/empty ]; then
-          mkdir -p /var/empty
-          chmod 0555 /var/empty
-          chown root:root /var/empty
-        fi
-      '';
+      # Empty, immutable home directory of many system accounts.
+      if [ ! -d /var/empty ]; then
+        mkdir -p /var/empty
+        chmod 0555 /var/empty
+        chown root:root /var/empty
+      fi
+    '';
 
-    system.activationScripts.usrbinenv = if config.environment.usrbinenv != null
+    system.activationScripts.usrbinenv =
+      if config.environment.usrbinenv != null
       then ''
         mkdir -m 0755 -p /usr/bin
         ln -sfn ${config.environment.usrbinenv} /usr/bin/.env.tmp
