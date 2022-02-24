@@ -22,7 +22,6 @@ let
       (nixpkgs + "/nixos/modules/misc/assertions.nix")
       (nixpkgs + "/nixos/modules/misc/lib.nix")
       (nixpkgs + "/nixos/modules/config/sysctl.nix")
-      ./ipxe.nix
       ./systemd-compat.nix
       pkgsModule
   ];
