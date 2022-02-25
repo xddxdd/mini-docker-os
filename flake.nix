@@ -16,5 +16,9 @@
       defaultPackage = eachSystem (system: (import ./. {
         inherit nixpkgs system;
       }).config.system.build.runvm);
+
+      packages = eachSystem (system: (import ./. {
+        inherit nixpkgs system;
+      }).config.system.build);
     };
 }
