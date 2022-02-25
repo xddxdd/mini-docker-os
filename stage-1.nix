@@ -28,40 +28,9 @@ let
       copy_bin_and_libs $BIN
     done
 
-    # # Copy ld manually since it isn't detected correctly
-    # cp -pv $ {pkgs.pkgsStatic.glibc.out}/lib/ld*.so.? $out/lib
-
-    # # Copy all of the needed libraries
-    # find $out/bin $out/lib -type f | while read BIN; do
-    #   echo "Copying libs for executable $BIN"
-    #   LDD="$(ldd $BIN)" || continue
-    #   LIBS="$(echo "$LDD" | awk '{print $3}' | sed '/^$/d')"
-    #   for LIB in $LIBS; do
-    #     TGT="$out/lib/$(basename $LIB)"
-    #     if [ ! -f "$TGT" ]; then
-    #       SRC="$(readlink -e $LIB)"
-    #       cp -pdv "$SRC" "$TGT"
-    #     fi
-    #   done
-    # done
-
     # Strip binaries further than normal.
     chmod -R u+w $out
     stripDirs "lib bin" "-s"
-
-    # # Run patchelf to make the programs refer to the copied libraries.
-    # find $out/bin $out/lib -type f | while read i; do
-    #   if ! test -L $i; then
-    #     nuke-refs -e $out $i
-    #   fi
-    # done
-
-    # find $out/bin -type f | while read i; do
-    #   if ! test -L $i; then
-    #     echo "patching $i..."
-    #     patchelf --set-interpreter $out/lib/ld*.so.? --set-rpath $out/lib $i || true
-    #   fi
-    # done
 
     # Make sure that the patchelf'ed binaries still work.
     echo "testing patched programs..."
