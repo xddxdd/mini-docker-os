@@ -1,8 +1,5 @@
 { config, lib, pkgs, ... }:
 
-let
-  docker-customized = pkgs.pkgsStatic.callPackage pkgs/docker.nix { };
-in
 {
   boot.initrd.kernelModules = [
     "bridge"
@@ -20,16 +17,16 @@ in
     "xt_MASQUERADE"
   ];
 
-  environment.systemPackages = with pkgs.pkgsStatic; [
-    busybox
-    docker-customized
-    iptables-legacy
-    runit
+  environment.systemPackages = with pkgs; [
+    lantian.docker
+    pkgsStatic.busybox
+    pkgsStatic.iptables-legacy
+    pkgsStatic.runit
   ];
 
   environment.etc."service/dockerd/run".source = pkgs.writeScript "run" ''
     #!/bin/sh
-    ${docker-customized}/bin/dockerd
+    ${pkgs.lantian.docker}/bin/dockerd
   '';
 
   environment.etc."docker/daemon.json".text = builtins.toJSON {

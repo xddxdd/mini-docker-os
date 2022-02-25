@@ -28,6 +28,11 @@ let
       copy_bin_and_libs $BIN
     done
 
+    # Copy Kmod
+    for BIN in ${pkgs.lantian.kmod}/{s,}bin/*; do
+      copy_bin_and_libs $BIN
+    done
+
     # Strip binaries further than normal.
     chmod -R u+w $out
     stripDirs "lib bin" "-s"

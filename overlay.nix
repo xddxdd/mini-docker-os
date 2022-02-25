@@ -29,6 +29,8 @@
 
       dhcpcd = prev.dhcpcd.override { udev = null; };
       util-linux = prev.util-linux.override { systemd = null; };
+
+      lantian = prev.callPackage ./pkgs { };
     })
   ];
 }

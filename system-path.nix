@@ -5,9 +5,10 @@
 with lib;
 
 let
-  requiredPackages = with pkgs.pkgsStatic; [
-    busybox
-    runit
+  requiredPackages = with pkgs; [
+    lantian.kmod
+    pkgsStatic.busybox
+    pkgsStatic.runit
   ];
 in
 {
