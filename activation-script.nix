@@ -35,7 +35,7 @@ let
         withHeadlines;
     in
     ''
-      #!${pkgs.runtimeShell}
+      #!${pkgs.pkgsStatic.busybox}/bin/sh
 
       systemConfig='@out@'
 
@@ -236,15 +236,9 @@ in
         rmdir --ignore-fail-on-non-empty /usr/bin /usr
       '';
 
-    systemd.user = {
-      services.nixos-activation = {
-        description = "Run user-specific NixOS activation";
-        script = config.system.userActivationScripts.script;
-        unitConfig.ConditionUser = "!@system";
-        serviceConfig.Type = "oneshot";
-        wantedBy = [ "default.target" ];
-      };
-    };
+    system.activationScripts.etc = stringAfter [ "users" "groups" ] ''
+      rm -rf /etc
+      cp -r ${config.system.build.etc}/etc /
+    '';
   };
-
 }

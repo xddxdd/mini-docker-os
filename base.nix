@@ -47,7 +47,6 @@ with lib;
 
       # Put shell paths here, or dropbear will ignore them
       shells.text = ''
-        /run/current-system/sw/bin/bash
         /run/current-system/sw/bin/sh
       '';
 

@@ -45,7 +45,6 @@ let
     (nixpkgs + "/nixos/modules/misc/lib.nix")
     (nixpkgs + "/nixos/modules/misc/nixpkgs.nix")
     (nixpkgs + "/nixos/modules/system/boot/kernel.nix")
-    (nixpkgs + "/nixos/modules/system/etc/etc-activation.nix")
     (nixpkgs + "/nixos/modules/system/etc/etc.nix")
 
     pkgsModule
