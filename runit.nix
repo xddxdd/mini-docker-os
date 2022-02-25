@@ -16,6 +16,8 @@ let
 
     chmod +x $out/bin/{poweroff,reboot}
   '';
+
+  dropbear = pkgs.pkgsStatic.callPackage pkgs/dropbear.nix { };
 in
 {
   environment.systemPackages = [ compat ];
@@ -52,7 +54,7 @@ in
       mkdir -p /root/.ssh
       ln -sf /etc/dropbear/authorized_keys /root/.ssh/authorized_keys
       mkdir -p /etc/dropbear
-      ${pkgs.dropbear}/bin/dropbear -RFmjk
+      ${dropbear}/bin/dropbear -RFmjk
     '';
 
     "service/nix/run".enable = config.not-os.nix;
