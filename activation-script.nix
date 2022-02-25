@@ -66,7 +66,7 @@ let
       exit $_status
     '';
 
-  path = with pkgs; map getBin [ busybox ];
+  path = with pkgs.pkgsStatic; map getBin [ busybox ];
 
   scriptType = withDry: with types;
     let scriptOptions =
@@ -193,9 +193,9 @@ in
     };
 
     environment.usrbinenv = mkOption {
-      default = "${pkgs.busybox}/bin/env";
-      defaultText = literalExpression ''"''${pkgs.busybox}/bin/env"'';
-      example = literalExpression ''"''${pkgs.busybox}/bin/env"'';
+      default = "${pkgs.pkgsStatic.busybox}/bin/env";
+      defaultText = literalExpression ''"''${pkgs.pkgsStatic.busybox}/bin/env"'';
+      example = literalExpression ''"''${pkgs.pkgsStatic.busybox}/bin/env"'';
       type = types.nullOr types.path;
       visible = false;
       description = ''

@@ -1,7 +1,7 @@
 { config, lib, pkgs, ... }:
 
 let
-  docker-customized = pkgs.callPackage pkgs/docker.nix { };
+  docker-customized = pkgs.pkgsStatic.callPackage pkgs/docker.nix { };
 in
 {
   boot.initrd.kernelModules = [
@@ -20,7 +20,7 @@ in
     "xt_MASQUERADE"
   ];
 
-  environment.systemPackages = with pkgs; [
+  environment.systemPackages = with pkgs.pkgsStatic; [
     busybox
     docker-customized
     iptables-legacy
@@ -42,6 +42,6 @@ in
   };
 
   system.activationScripts.iptables = ''
-    ${pkgs.iptables-legacy}/bin/iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+    ${pkgs.pkgsStatic.iptables-legacy}/bin/iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
   '';
 }

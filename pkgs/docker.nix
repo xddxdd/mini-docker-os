@@ -12,9 +12,6 @@
 , tini
 , libtool
 , sqlite
-, libselinux
-, libseccomp
-, libapparmor
 , clientOnly ? !stdenv.isLinux
 , symlinkJoin
 , which
@@ -27,36 +24,32 @@ let
 
   docker-runc = buildGoModule rec {
     inherit (pkgs.docker.docker-runc) name version src;
-
     vendorSha256 = null;
 
-    nativeBuildInputs = [ pkg-config ];
-
-    buildInputs = [ libselinux libseccomp libapparmor ];
-
-    makeFlags = [ "BUILDTAGS+=seccomp" ];
-
     buildPhase = ''
-      runHook preBuild
       patchShebangs .
-      make ${toString makeFlags} runc
-      runHook postBuild
+      make BUILDTAGS= runc
     '';
 
     installPhase = ''
-      runHook preInstall
       install -Dm755 runc $out/bin/runc
-      runHook postInstall
     '';
   };
 
-  docker-containerd = containerd_1_4.overrideAttrs (oldAttrs: {
+  docker-containerd = buildGoPackage rec {
     inherit (pkgs.docker.docker-containerd) name version src;
-    buildInputs = oldAttrs.buildInputs ++ [ libseccomp ];
+    goPackagePath = "github.com/containerd/containerd";
+
     buildPhase = ''
-      export BUILDTAGS="seccomp no_aufs no_btrfs no_devmapper no_zfs"
-    '' + oldAttrs.buildPhase;
-  });
+      cd go/src/${goPackagePath}
+      patchShebangs .
+      make binaries "BUILDTAGS=no_aufs no_btrfs no_devmapper no_zfs" "VERSION=v${version}" "REVISION=${src.rev}"
+    '';
+
+    installPhase = ''
+      install -Dm555 bin/* -t $out/bin
+    '';
+  };
 
   docker-tini = tini.overrideAttrs (oldAttrs: {
     inherit (pkgs.docker.docker-tini) name version src;
@@ -64,12 +57,10 @@ let
     # Do not remove static from make files as we want a static binary
     postPatch = "";
 
-    buildInputs = [ glibc glibc.static ];
-
     NIX_CFLAGS_COMPILE = "-DMINIMAL=ON";
   });
 
-  moby = buildGoPackage ((optionalAttrs (stdenv.isLinux)) rec {
+  moby = buildGoPackage rec {
     name = "moby-${version}";
     inherit version;
     inherit docker-runc docker-containerd docker-tini;
@@ -79,7 +70,7 @@ let
     goPackagePath = "github.com/docker/docker";
 
     nativeBuildInputs = [ pkg-config go libtool ];
-    buildInputs = [ sqlite libseccomp ];
+    buildInputs = [ sqlite ];
 
     postPatch = ''
       patchShebangs hack/make.sh hack/make/
@@ -109,9 +100,8 @@ let
     DOCKER_BUILDTAGS = [
       "exclude_graphdriver_btrfs"
       "exclude_graphdriver_devicemapper"
-    ]
-    ++ optional (libseccomp != null) "seccomp";
-  });
+    ];
+  };
 in
 buildGoPackage ((optionalAttrs (!clientOnly) {
 
@@ -130,7 +120,6 @@ buildGoPackage ((optionalAttrs (!clientOnly) {
   ];
   buildInputs = optionals (!clientOnly) [
     sqlite
-    libseccomp
   ];
 
   postPatch = ''

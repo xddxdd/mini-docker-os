@@ -5,7 +5,7 @@
 with lib;
 
 let
-  requiredPackages = with pkgs; [
+  requiredPackages = with pkgs.pkgsStatic; [
     busybox
     runit
   ];

@@ -12,7 +12,7 @@ let
   extraUtils = pkgs.runCommandCC "extra-utils"
     {
       buildInputs = [ pkgs.nukeReferences ];
-      allowedReferences = [ "out" ];
+      allowedReferences = [ "out" pkgs.pkgsStatic.busybox ];
     } ''
     set +o pipefail
     mkdir -p $out/bin $out/lib
@@ -24,44 +24,44 @@ let
     }
 
     # Copy Busybox
-    for BIN in ${pkgs.busybox}/{s,}bin/*; do
+    for BIN in ${pkgs.pkgsStatic.busybox}/{s,}bin/*; do
       copy_bin_and_libs $BIN
     done
 
-    # Copy ld manually since it isn't detected correctly
-    cp -pv ${pkgs.glibc.out}/lib/ld*.so.? $out/lib
+    # # Copy ld manually since it isn't detected correctly
+    # cp -pv $ {pkgs.pkgsStatic.glibc.out}/lib/ld*.so.? $out/lib
 
-    # Copy all of the needed libraries
-    find $out/bin $out/lib -type f | while read BIN; do
-      echo "Copying libs for executable $BIN"
-      LDD="$(ldd $BIN)" || continue
-      LIBS="$(echo "$LDD" | awk '{print $3}' | sed '/^$/d')"
-      for LIB in $LIBS; do
-        TGT="$out/lib/$(basename $LIB)"
-        if [ ! -f "$TGT" ]; then
-          SRC="$(readlink -e $LIB)"
-          cp -pdv "$SRC" "$TGT"
-        fi
-      done
-    done
+    # # Copy all of the needed libraries
+    # find $out/bin $out/lib -type f | while read BIN; do
+    #   echo "Copying libs for executable $BIN"
+    #   LDD="$(ldd $BIN)" || continue
+    #   LIBS="$(echo "$LDD" | awk '{print $3}' | sed '/^$/d')"
+    #   for LIB in $LIBS; do
+    #     TGT="$out/lib/$(basename $LIB)"
+    #     if [ ! -f "$TGT" ]; then
+    #       SRC="$(readlink -e $LIB)"
+    #       cp -pdv "$SRC" "$TGT"
+    #     fi
+    #   done
+    # done
 
     # Strip binaries further than normal.
     chmod -R u+w $out
     stripDirs "lib bin" "-s"
 
-    # Run patchelf to make the programs refer to the copied libraries.
-    find $out/bin $out/lib -type f | while read i; do
-      if ! test -L $i; then
-        nuke-refs -e $out $i
-      fi
-    done
+    # # Run patchelf to make the programs refer to the copied libraries.
+    # find $out/bin $out/lib -type f | while read i; do
+    #   if ! test -L $i; then
+    #     nuke-refs -e $out $i
+    #   fi
+    # done
 
-    find $out/bin -type f | while read i; do
-      if ! test -L $i; then
-        echo "patching $i..."
-        patchelf --set-interpreter $out/lib/ld*.so.? --set-rpath $out/lib $i || true
-      fi
-    done
+    # find $out/bin -type f | while read i; do
+    #   if ! test -L $i; then
+    #     echo "patching $i..."
+    #     patchelf --set-interpreter $out/lib/ld*.so.? --set-rpath $out/lib $i || true
+    #   fi
+    # done
 
     # Make sure that the patchelf'ed binaries still work.
     echo "testing patched programs..."
@@ -69,7 +69,7 @@ let
     export LD_LIBRARY_PATH=$out/lib
     $out/bin/mount --help 2>&1 | grep -q "BusyBox"
   '';
-  shell = "${extraUtils}/bin/ash";
+  shell = "${extraUtils}/bin/sh";
   bootStage1 = pkgs.writeScript "stage1" ''
     #!${shell}
     echo
