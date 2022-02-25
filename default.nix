@@ -7,39 +7,6 @@ let
     key = _file;
     config = {
       nixpkgs.localSystem = { inherit system; };
-      nixpkgs.overlays = [
-        (final: prev: {
-          btrfs-progs = null;
-          containerd_1_4 = prev.containerd_1_4.overrideAttrs (old: {
-            buildPhase = ''
-              export BUILDTAGS="seccomp no_aufs no_btrfs no_devmapper no_zfs"
-            '' + old.buildPhase;
-          });
-          git = prev.git.override {
-            guiSupport = false;
-            nlsSupport = false;
-            perlSupport = false;
-            pythonSupport = false;
-            sendEmailSupport = false;
-            svnSupport = false;
-            withLibsecret = false;
-            withManual = false;
-            withpcre2 = false;
-          };
-          lvm2 = null;
-          openssh = (prev.openssh.override {
-            withKerberos = false;
-            withFIDO = false;
-          }).overrideAttrs (old: { doCheck = false; });
-          procps = prev.procps.override { withSystemd = false; };
-          systemd = null;
-          systemdMinimal = null;
-
-          dhcpcd = prev.dhcpcd.override { udev = null; };
-          util-linux = prev.util-linux.override { systemd = null; };
-        })
-      ];
-
       not-os.nix = false;
       not-os.simpleStaticIp = true;
       environment.etc = {
@@ -66,6 +33,7 @@ let
     ./activation-script.nix
     ./base.nix
     ./docker.nix
+    ./overlay.nix
     ./runit.nix
     ./stage-1.nix
     ./stage-2.nix

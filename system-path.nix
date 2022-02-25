@@ -7,7 +7,6 @@ with lib;
 let
   requiredPackages = with pkgs; [
     busybox
-    nftables
     runit
   ];
 in

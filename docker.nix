@@ -1,9 +1,8 @@
 { config, lib, pkgs, ... }:
 
-# based heavily on https://github.com/NixOS/nixpkgs/blob/master/nixos/modules/config/system-path.nix
-
-with lib;
-
+let
+  docker-customized = pkgs.callPackage pkgs/docker.nix { };
+in
 {
   boot.initrd.kernelModules = [
     "bridge"
@@ -23,14 +22,14 @@ with lib;
 
   environment.systemPackages = with pkgs; [
     busybox
-    docker
+    docker-customized
     iptables-legacy
     runit
   ];
 
   environment.etc."service/dockerd/run".source = pkgs.writeScript "run" ''
     #!/bin/sh
-    ${pkgs.docker}/bin/dockerd
+    ${docker-customized}/bin/dockerd
   '';
 
   environment.etc."docker/daemon.json".text = builtins.toJSON {
