@@ -21,7 +21,7 @@ in
   environment.systemPackages = [ compat ];
   environment.etc = {
     "runit/1".source = pkgs.writeScript "1" ''
-      #!${pkgs.stdenv.shell}
+      #!${pkgs.busybox}/bin/sh
       ${lib.optionalString config.not-os.simpleStaticIp ''
       ip addr add 10.0.2.15 dev eth0
       ip link set eth0 up
@@ -29,7 +29,7 @@ in
       ip route add default via 10.0.2.2 dev eth0
       ''}
       mkdir /bin/
-      ln -s ${pkgs.stdenv.shell} /bin/sh
+      ln -s ${pkgs.busybox}/bin/sh /bin/sh
 
       # disable DPMS on tty's
       echo -ne "\033[9;0]" > /dev/tty0

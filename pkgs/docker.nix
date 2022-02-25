@@ -1,17 +1,9 @@
-# { lib, callPackage, fetchFromGitHub }:
-
-
-# let
-#   dockerGen =
-
 { pkgs
 , lib
   # package dependencies
 , stdenv
-, fetchFromGitHub
 , buildGoModule
 , buildGoPackage
-, makeWrapper
 , pkg-config
 , glibc
 , go
@@ -23,8 +15,6 @@
 , libselinux
 , libseccomp
 , libapparmor
-, slirp4netns
-, nixosTests
 , clientOnly ? !stdenv.isLinux
 , symlinkJoin
 , which
@@ -58,8 +48,6 @@ let
       install -Dm755 runc $out/bin/runc
       runHook postInstall
     '';
-
-    passthru.tests = { inherit (nixosTests) cri-o docker podman; };
   };
 
   docker-containerd = containerd_1_4.overrideAttrs (oldAttrs: {
@@ -90,7 +78,7 @@ let
 
     goPackagePath = "github.com/docker/docker";
 
-    nativeBuildInputs = [ makeWrapper pkg-config go libtool ];
+    nativeBuildInputs = [ pkg-config go libtool ];
     buildInputs = [ sqlite libseccomp ];
 
     postPatch = ''
@@ -110,15 +98,12 @@ let
 
     installPhase = ''
       cd ./go/src/${goPackagePath}
-      install -Dm755 ./bundles/dynbinary-daemon/dockerd $out/libexec/docker/dockerd
+      install -Dm755 ./bundles/dynbinary-daemon/dockerd $out/bin/dockerd
 
-      makeWrapper $out/libexec/docker/dockerd $out/bin/dockerd \
-        --prefix PATH : "$out/libexec/docker:$extraPath"
-
-      ln -s ${docker-containerd}/bin/containerd $out/libexec/docker/containerd
-      ln -s ${docker-containerd}/bin/containerd-shim $out/libexec/docker/containerd-shim
-      ln -s ${docker-runc}/bin/runc $out/libexec/docker/runc
-      ln -s ${docker-tini}/bin/tini-static $out/libexec/docker/docker-init
+      ln -s ${docker-containerd}/bin/containerd $out/bin/containerd
+      ln -s ${docker-containerd}/bin/containerd-shim $out/bin/containerd-shim
+      ln -s ${docker-runc}/bin/runc $out/bin/runc
+      ln -s ${docker-tini}/bin/tini-static $out/bin/docker-init
     '';
 
     DOCKER_BUILDTAGS = [
@@ -139,7 +124,6 @@ buildGoPackage ((optionalAttrs (!clientOnly) {
   goPackagePath = "github.com/docker/cli";
 
   nativeBuildInputs = [
-    makeWrapper
     pkg-config
     go
     libtool
@@ -173,16 +157,15 @@ buildGoPackage ((optionalAttrs (!clientOnly) {
 
   installPhase = ''
     cd ./go/src/${goPackagePath}
-    install -Dm755 ./docker $out/libexec/docker/docker
-
-    makeWrapper $out/libexec/docker/docker $out/bin/docker \
-      --prefix PATH : "$out/libexec/docker:$extraPath"
+    install -Dm755 ./docker $out/bin/docker
   '' + optionalString (!clientOnly) ''
     # symlink docker daemon to docker cli derivation
     ln -s ${moby}/bin/dockerd $out/bin/dockerd
+    ln -s ${docker-containerd}/bin/containerd $out/bin/containerd
+    ln -s ${docker-containerd}/bin/containerd-shim $out/bin/containerd-shim
+    ln -s ${docker-runc}/bin/runc $out/bin/runc
+    ln -s ${docker-tini}/bin/tini-static $out/bin/docker-init
   '';
-
-  passthru.tests = lib.optionals (!clientOnly) { inherit (nixosTests) docker; };
 
   # Exposed for tarsum build on non-linux systems (build-support/docker/default.nix)
   inherit moby-src;
